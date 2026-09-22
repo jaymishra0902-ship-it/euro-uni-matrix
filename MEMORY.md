@@ -1,0 +1,1 @@
+- [Generated client typing](generated-client-typing.md) — composite API client builds need `dom.iterable` when generated code uses `Headers.entries()`.
