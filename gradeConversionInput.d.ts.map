@@ -1,0 +1,1 @@
+{"version":3,"file":"gradeConversionInput.d.ts","sourceRoot":"","sources":["../../../src/generated/types/gradeConversionInput.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,KAAK,EAAE,8BAA8B,EAAE,MAAM,kCAAkC,CAAC;AACvF,OAAO,KAAK,EAAE,4BAA4B,EAAE,MAAM,gCAAgC,CAAC;AAEnF,MAAM,WAAW,oBAAoB;IACnC,KAAK,EAAE,MAAM,CAAC;IACd,UAAU,EAAE,8BAA8B,CAAC;IAC3C,QAAQ,EAAE,4BAA4B,CAAC;CACxC"}

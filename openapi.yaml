@@ -1,0 +1,340 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: universities
+    description: University discovery and admissions matching
+  - name: counselor
+    description: Admissions counseling utilities
+  - name: workspace
+    description: Authenticated applicant planning workspace
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /universities:
+    get:
+      operationId: listUniversities
+      tags: [universities]
+      summary: List European universities
+      description: Returns a filterable catalog of universities with admissions fit signals.
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: country
+          schema: { type: string }
+        - in: query
+          name: region
+          schema: { type: string }
+        - in: query
+          name: degreeLevel
+          schema: { type: string, enum: [Bachelor's, Master's, PhD] }
+        - in: query
+          name: field
+          schema: { type: string }
+        - in: query
+          name: maxTuition
+          schema: { type: number }
+        - in: query
+          name: tier
+          schema: { type: string, enum: [safe, target, reach] }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        "200":
+          description: Matching universities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/University"
+  /universities/{universityId}:
+    get:
+      operationId: getUniversity
+      tags: [universities]
+      summary: Get a university profile
+      parameters:
+        - in: path
+          name: universityId
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: University profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/University"
+        "404":
+          description: University not found
+  /counselor/match:
+    post:
+      operationId: matchUniversities
+      tags: [counselor]
+      summary: Match a student profile to universities
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudentProfileInput"
+      responses:
+        "200":
+          description: Admission fit recommendations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchResponse"
+  /counselor/convert-grade:
+    post:
+      operationId: convertGrade
+      tags: [counselor]
+      summary: Convert a grade between common European and global systems
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GradeConversionInput"
+      responses:
+        "200":
+          description: Converted grade
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GradeConversion"
+  /counselor/bridge-courses:
+    get:
+      operationId: listBridgeCourses
+      tags: [counselor]
+      summary: List prerequisite bridge courses
+      parameters:
+        - in: query
+          name: topic
+          schema: { type: string }
+      responses:
+        "200":
+          description: Suggested bridge courses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BridgeCourse"
+  /workspace:
+    get:
+      operationId: getPlannerWorkspace
+      tags: [workspace]
+      summary: Get the signed-in applicant's planner workspace
+      security:
+        - clerkSession: []
+      responses:
+        "200":
+          description: Persisted planner state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlannerWorkspace"
+        "401":
+          description: Authentication required
+    put:
+      operationId: savePlannerWorkspace
+      tags: [workspace]
+      summary: Save the signed-in applicant's planner workspace
+      security:
+        - clerkSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlannerWorkspaceInput"
+      responses:
+        "200":
+          description: Saved planner state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlannerWorkspace"
+        "401":
+          description: Authentication required
+components:
+  securitySchemes:
+    clerkSession:
+      type: http
+      scheme: bearer
+      bearerFormat: Clerk session
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    University:
+      type: object
+      required:
+        - id
+        - name
+        - city
+        - country
+        - countryCode
+        - region
+        - type
+        - rank
+        - tuition
+        - livingCost
+        - acceptanceRate
+        - fitScore
+        - tier
+        - fields
+        - languages
+        - applicationUrl
+        - logo
+        - image
+        - highlights
+      properties:
+        id: { type: string }
+        name: { type: string }
+        city: { type: string }
+        country: { type: string }
+        countryCode: { type: string }
+        region: { type: string }
+        type: { type: string }
+        rank: { type: integer }
+        tuition: { type: number }
+        livingCost: { type: number }
+        acceptanceRate: { type: number }
+        fitScore: { type: number }
+        tier: { type: string, enum: [safe, target, reach] }
+        fields:
+          type: array
+          items: { type: string }
+        languages:
+          type: array
+          items: { type: string }
+        applicationUrl: { type: string }
+        logo: { type: string }
+        image: { type: string }
+        highlights:
+          type: array
+          items: { type: string }
+    StudentProfileInput:
+      type: object
+      required: [degreeLevel, field, grade, gradeSystem, englishScore, budget, experienceYears, region]
+      properties:
+        degreeLevel: { type: string, enum: [Bachelor's, Master's, PhD] }
+        field: { type: string }
+        grade: { type: number }
+        gradeSystem: { type: string, enum: [US GPA, UK Honours, ECTS, Bavarian, Percentage] }
+        englishScore: { type: number }
+        englishTest: { type: string, enum: [IELTS, TOEFL] }
+        budget: { type: number }
+        currency: { type: string, enum: [EUR, GBP, CHF] }
+        experienceYears: { type: number }
+        region: { type: string }
+        gre: { type: number }
+        prerequisiteTopics:
+          type: array
+          items: { type: string }
+    MatchResponse:
+      type: object
+      required: [matches, summary]
+      properties:
+        matches:
+          type: array
+          items:
+            $ref: "#/components/schemas/University"
+        summary:
+          $ref: "#/components/schemas/MatchSummary"
+    MatchSummary:
+      type: object
+      required: [profileStrength, totalMatches, safeCount, targetCount, reachCount, topInsight]
+      properties:
+        profileStrength: { type: number }
+        totalMatches: { type: integer }
+        safeCount: { type: integer }
+        targetCount: { type: integer }
+        reachCount: { type: integer }
+        topInsight: { type: string }
+    GradeConversionInput:
+      type: object
+      required: [value, fromSystem, toSystem]
+      properties:
+        value: { type: number }
+        fromSystem: { type: string, enum: [US GPA, UK Honours, ECTS, Bavarian, Percentage] }
+        toSystem: { type: string, enum: [US GPA, UK Honours, ECTS, Bavarian, Percentage] }
+    GradeConversion:
+      type: object
+      required: [value, label, explanation, scale]
+      properties:
+        value: { type: number }
+        label: { type: string }
+        explanation: { type: string }
+        scale: { type: string }
+    BridgeCourse:
+      type: object
+      required: [id, title, provider, topic, ects, duration, url, level]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        provider: { type: string }
+        topic: { type: string }
+        ects: { type: number }
+        duration: { type: string }
+        url: { type: string }
+        level: { type: string }
+    PlannerWorkspaceInput:
+      type: object
+      required: [selectedIds, visaTasks, auditFiles, sopField, sopInterest, sopGoal, resumeText, ectsTopics, syllabusFiles]
+      properties:
+        selectedIds:
+          type: array
+          items: { type: string }
+        visaTasks:
+          type: array
+          items: { type: string }
+        auditFiles:
+          type: array
+          items: { type: string }
+        sopField: { type: string }
+        sopInterest: { type: string }
+        sopGoal: { type: string }
+        resumeText: { type: string }
+        ectsTopics:
+          type: array
+          items: { type: string }
+        syllabusFiles:
+          type: array
+          items: { type: string }
+    PlannerWorkspace:
+      allOf:
+        - $ref: "#/components/schemas/PlannerWorkspaceInput"
+        - type: object
+          required: [updatedAt]
+          properties:
+            updatedAt: { type: string, format: date-time }
+
