@@ -1,0 +1,31 @@
+import { ArrowLeft, ArrowUpRight, Check, ExternalLink, Languages, MapPin, Wallet } from 'lucide-react';
+import { Link, useParams } from 'wouter';
+import { getGetUniversityQueryKey, useGetUniversity } from '@workspace/api-client-react';
+import { demoUniversities } from '@/lib/demo-data';
+
+export default function UniversityDetail() {
+  const { id } = useParams<{ id: string }>();
+  const query = useGetUniversity(id || '', { query: { enabled: !!id, queryKey: getGetUniversityQueryKey(id || '') } });
+  const university = query.data || demoUniversities.find((item) => item.id === id) || demoUniversities[0];
+  const tierColor = university.tier === 'reach' ? 'bg-amber-100 text-amber-800' : university.tier === 'safe' ? 'bg-emerald-100 text-emerald-800' : 'bg-secondary text-secondary-foreground';
+
+  return (
+    <div className="mx-auto max-w-[1180px] px-5 py-8 md:px-10 md:py-10">
+      <Link href="/finder" className="inline-flex items-center gap-2 text-[11px] font-semibold text-muted-foreground hover:text-foreground" data-testid="link-back-finder"><ArrowLeft size={14} /> Back to finder</Link>
+      {query.isLoading && <div className="mt-8 space-y-4"><div className="skeleton h-36 rounded-2xl" /><div className="skeleton h-56 rounded-2xl" /></div>}
+      <div className="rise-in mt-8 grid gap-5 lg:grid-cols-[1.4fr_0.6fr]">
+        <section className="overflow-hidden rounded-2xl border border-card-border bg-card shadow-sm">
+          <div className="relative bg-primary px-6 py-9 text-primary-foreground md:px-9"><div className="map-grid absolute inset-0 opacity-45" /><div className="relative"><div className="flex flex-wrap items-start justify-between gap-4"><div className="grid h-14 w-14 place-items-center rounded-2xl bg-accent text-sm font-bold text-accent-foreground">{university.logo || university.countryCode}</div><span className={`rounded-full px-3 py-1.5 text-[10px] font-semibold ${tierColor}`}>{university.tier} fit</span></div><h1 className="mt-8 max-w-2xl font-display text-4xl leading-tight tracking-[-0.04em] md:text-5xl">{university.name}</h1><p className="mt-3 flex items-center gap-2 text-sm text-primary-foreground/65"><MapPin size={15} /> {university.city}, {university.country} <span className="text-primary-foreground/30">·</span> {university.type}</p></div></div>
+          {university.image && <div className="border-b border-border bg-muted"><img src={university.image} alt={`${university.name} campus`} className="h-52 w-full object-cover md:h-64" data-testid={`img-campus-detail-${university.id}`} /></div>}
+          <div className="grid grid-cols-2 divide-x divide-border border-b border-border md:grid-cols-4"><Metric label="Matrix fit" value={`${university.fitScore}/100`} accent /><Metric label="Europe rank" value={`#${university.rank}`} /><Metric label="Acceptance" value={`${university.acceptanceRate}%`} /><Metric label="Living / year" value={`€${university.livingCost.toLocaleString()}`} /></div>
+          <div className="p-6 md:p-9"><div className="grid gap-8 md:grid-cols-[1fr_0.8fr]"><div><h2 className="font-display text-2xl">Why it belongs on your map</h2><ul className="mt-5 space-y-3">{university.highlights.map((highlight) => <li key={highlight} className="flex gap-2.5 text-sm leading-relaxed text-muted-foreground"><Check size={16} className="mt-0.5 shrink-0 text-accent" />{highlight}</li>)}</ul></div><div><h3 className="font-mono-ui text-[9px] uppercase tracking-[0.18em] text-muted-foreground">Study language</h3><div className="mt-3 flex items-center gap-2 text-sm"><Languages size={16} className="text-secondary-foreground" /> {university.languages.join(' · ')}</div><h3 className="mt-7 font-mono-ui text-[9px] uppercase tracking-[0.18em] text-muted-foreground">Fields with signal</h3><div className="mt-3 flex flex-wrap gap-1.5">{university.fields.map((field) => <span key={field} className="rounded-md bg-muted px-2.5 py-1.5 text-[10px]">{field}</span>)}</div></div></div></div>
+        </section>
+        <aside className="h-fit rounded-2xl border border-card-border bg-card p-6 shadow-sm lg:sticky lg:top-24"><p className="font-mono-ui text-[10px] uppercase tracking-[0.18em] text-accent">Your next step</p><h2 className="mt-3 font-display text-3xl leading-tight">Turn interest into a date.</h2><p className="mt-3 text-sm leading-relaxed text-muted-foreground">Use the official programme page to verify your exact intake, document list, and deadline.</p><a href={university.applicationUrl} target="_blank" rel="noreferrer" className="mt-6 flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-xs font-semibold text-accent-foreground transition-transform hover:-translate-y-0.5" data-testid={`link-apply-${university.id}`}>Open application page <ExternalLink size={14} /></a><div className="mt-6 border-t border-border pt-5"><div className="flex items-center gap-2 text-xs font-semibold"><Wallet size={15} className="text-secondary-foreground" /> Estimated annual plan</div><div className="mt-4 flex justify-between text-xs text-muted-foreground"><span>Tuition</span><span className="font-mono-ui text-foreground">€{university.tuition.toLocaleString()}</span></div><div className="mt-2 flex justify-between text-xs text-muted-foreground"><span>Living cost</span><span className="font-mono-ui text-foreground">€{university.livingCost.toLocaleString()}</span></div><div className="mt-4 flex justify-between border-t border-border pt-3 text-xs font-semibold"><span>Working estimate</span><span className="font-mono-ui">€{(university.tuition + university.livingCost).toLocaleString()}</span></div></div><Link href="/counselor" className="mt-6 flex items-center justify-center gap-1 text-[11px] font-semibold text-accent hover:underline" data-testid="link-check-fit">Check this against my profile <ArrowUpRight size={13} /></Link></aside>
+      </div>
+    </div>
+  );
+}
+
+function Metric({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
+  return <div className="px-4 py-4 md:px-5"><p className="font-mono-ui text-[9px] uppercase tracking-wider text-muted-foreground">{label}</p><p className={`mt-2 font-display text-2xl ${accent ? 'text-accent' : ''}`}>{value}</p></div>;
+}
